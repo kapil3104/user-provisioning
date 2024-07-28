@@ -1,4 +1,4 @@
-package com.user.provisioning.entity;
+package com.user.provisioning.enums;
 
 public enum ERole {
     ROLE_USER,

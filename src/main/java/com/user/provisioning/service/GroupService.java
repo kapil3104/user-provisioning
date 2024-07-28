@@ -2,110 +2,178 @@ package com.user.provisioning.service;
 
 import com.user.provisioning.dto.GroupRequest;
 import com.user.provisioning.entity.DynamicGroupRule;
-import com.user.provisioning.entity.Employee;
 import com.user.provisioning.entity.Group;
-import com.user.provisioning.entity.MembershipRequest;
 import com.user.provisioning.exception.ErrorCode;
 import com.user.provisioning.exception.UserProvisioningCustomException;
-import com.user.provisioning.repository.DynamicGroupRuleRepository;
-import com.user.provisioning.repository.EmployeeRepository;
 import com.user.provisioning.repository.GroupRepository;
-import com.user.provisioning.repository.MembershipRequestRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
-import static java.util.Objects.nonNull;
-
+/**
+ * Service class for managing group-related operations.
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GroupService {
 
     public static final String DYNAMIC = "Dynamic";
 
     private final GroupRepository groupRepository;
-    private final EmployeeService employeeService;
-    private final MembershipRequestRepository membershipRequestRepository;
-    private final DynamicGroupRuleRepository dynamicGroupRuleRepository;
+    private final DynamicGroupService dynamicGroupService;
 
+    /**
+     * Retrieves all groups.
+     *
+     * @return a list of all groups
+     */
     public List<Group> getAllGroups() {
+        log.info("Fetching all groups");
         return groupRepository.findAll();
     }
 
-    public Group getGroupById(String id) {
-        Optional<Group> optionalGroup = groupRepository.findById(id);
-        if(optionalGroup.isPresent()) {
-            return optionalGroup.get();
-        }
-        throw new UserProvisioningCustomException(ErrorCode.GROUP_NOT_FOUND);
+    /**
+     * Retrieves a group by its ID.
+     *
+     * @param id the ID of the group
+     * @return the group with the specified ID
+     * @throws UserProvisioningCustomException if the group is not found
+     */
+    public Group getGroupById(Long id) {
+        log.info("Fetching group with id: {}", id);
+        return groupRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Group with id {} not found", id);
+                    return new UserProvisioningCustomException(ErrorCode.GROUP_NOT_FOUND);
+                });
     }
 
+    /**
+     * Creates a new group.
+     *
+     * @param groupRequest the request object containing group details
+     * @return the created group
+     * @throws UserProvisioningCustomException if there are validation errors in the group request
+     */
     public Group createGroup(GroupRequest groupRequest) {
-        if (DYNAMIC.equalsIgnoreCase(groupRequest.getType()) && (groupRequest.getDynamicGroupRules() == null || groupRequest.getDynamicGroupRules().isEmpty())) {
-            throw new UserProvisioningCustomException(ErrorCode.DYNAMIC_GROUP_RULE_VALIDATION_ERROR);
-        }
+        log.info("Creating group with name: {}", groupRequest.getName());
+        validateGroupRequest(groupRequest);
+
         Group group = new Group();
         group.setName(groupRequest.getName());
         group.setType(groupRequest.getType());
         group.setDescription(groupRequest.getDescription());
 
-        Group savedGroup = groupRepository.save(group);
-
-        if (DYNAMIC.equalsIgnoreCase(groupRequest.getType())) {
+        if (isDynamicGroup(groupRequest.getType())) {
             for (DynamicGroupRule rule : groupRequest.getDynamicGroupRules()) {
-                rule.setGroupId(savedGroup.getId());
-                dynamicGroupRuleRepository.save(rule);
+                rule.setGroup(group);
+                group.getDynamicGroupRules().add(rule);
             }
         }
+        Group savedGroup = groupRepository.save(group);
+        log.info("Group with id {} created successfully", savedGroup.getId());
 
+        if (isDynamicGroup(groupRequest.getType())) {
+            dynamicGroupService.evaluateAndUpdateDynamicGroups(savedGroup.getId());
+        }
         return savedGroup;
     }
 
-    public Group updateGroup(String id, Group groupDetails) {
+    /**
+     * Updates an existing group.
+     *
+     * @param id           the ID of the group to update
+     * @param groupRequest the request object containing updated group details
+     * @return the updated group
+     * @throws UserProvisioningCustomException if there are validation errors in the group request or the group is not found
+     */
+    @Transactional
+    public Group updateGroup(Long id, GroupRequest groupRequest) {
+        log.info("Updating group with id: {}", id);
+        validateGroupRequest(groupRequest);
+
+        Group updatedGroup = updateGroupDetails(id, groupRequest);
+
+        if (isDynamicGroup(groupRequest.getType())) {
+            updatedGroup.getDynamicGroupRules().clear();
+            for (DynamicGroupRule rule : groupRequest.getDynamicGroupRules()) {
+                rule.setGroup(updatedGroup);
+                updatedGroup.getDynamicGroupRules().add(rule);
+            }
+        }
+
+        if (isDynamicGroup(groupRequest.getType())) {
+            dynamicGroupService.evaluateAndUpdateDynamicGroups(updatedGroup.getId());
+        }
+        Group savedGroup = groupRepository.save(updatedGroup);
+        log.info("Group with id {} updated successfully", savedGroup.getId());
+        return savedGroup;
+    }
+
+    /**
+     * Deletes a group by its ID.
+     *
+     * @param id the ID of the group to delete
+     * @throws UserProvisioningCustomException if the group is not found
+     */
+    @Transactional
+    public void deleteGroup(Long id) {
+        log.info("Deleting group with id: {}", id);
+        if (groupRepository.existsById(id)) {
+            groupRepository.deleteById(id);
+            log.info("Group with id {} deleted successfully", id);
+        } else {
+            log.error("Group with id {} not found", id);
+            throw new UserProvisioningCustomException(ErrorCode.GROUP_NOT_FOUND);
+        }
+    }
+
+    /**
+     * Validates the group request.
+     *
+     * @param groupRequest the request object to validate
+     * @throws UserProvisioningCustomException if the validation fails
+     */
+    private void validateGroupRequest(GroupRequest groupRequest) {
+        if (isDynamicGroup(groupRequest.getType()) && (groupRequest.getDynamicGroupRules() == null || groupRequest.getDynamicGroupRules().isEmpty())) {
+            log.error("Validation error: Dynamic group rules are missing or empty for group request {}", groupRequest);
+            throw new UserProvisioningCustomException(ErrorCode.DYNAMIC_GROUP_RULE_VALIDATION_ERROR);
+        }
+    }
+
+    /**
+     * Checks if the group is of type dynamic.
+     *
+     * @param type the type of the group
+     * @return true if the group is dynamic, false otherwise
+     */
+    private boolean isDynamicGroup(String type) {
+        return DYNAMIC.equalsIgnoreCase(type);
+    }
+
+    /**
+     * Updates the details of a group.
+     *
+     * @param id           the ID of the group to update
+     * @param groupRequest the request object containing updated group details
+     * @return the updated group
+     * @throws UserProvisioningCustomException if the group is not found
+     */
+    private Group updateGroupDetails(Long id, GroupRequest groupRequest) {
         Group group = getGroupById(id);
-        if(nonNull(groupDetails.getName()) && !groupDetails.getName().isEmpty()) {
-            group.setName(groupDetails.getName());
+        if (!groupRequest.getName().isEmpty()) {
+            group.setName(groupRequest.getName());
         }
-        if(nonNull(groupDetails.getType()) && !groupDetails.getType().isEmpty()) {
-            group.setType(groupDetails.getType());
+        if (!groupRequest.getType().isEmpty()) {
+            group.setType(groupRequest.getType());
         }
-        if(nonNull(groupDetails.getDescription()) && !groupDetails.getDescription().isEmpty()) {
-            group.setDescription(groupDetails.getDescription());
+        if (groupRequest.getDescription() != null && !groupRequest.getDescription().isEmpty()) {
+            group.setDescription(groupRequest.getDescription());
         }
-        return groupRepository.save(group);
+        return group;
     }
-
-    public void deleteGroup(String id) {
-        groupRepository.deleteById(id);
-    }
-
-    public List<Employee> getEmployeesByGroupId(String groupId) {
-        Optional<List<MembershipRequest>> optionalMembershipRequest = membershipRequestRepository.findByGroupIdAndStatus(groupId, "Approved");
-        if(optionalMembershipRequest.isEmpty()) {
-            throw new UserProvisioningCustomException(ErrorCode.EMPLOYEES_NOT_FOUND_FOR_GIVEN_GROUP);
-        }
-        List<String> approvedMemberIds = optionalMembershipRequest.get()
-                .stream()
-                .map(MembershipRequest::getEmployeeId)
-                .toList();
-
-        return approvedMemberIds.stream()
-                .map(this::getEmployeeByIdSafe)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private Employee getEmployeeByIdSafe(String id) {
-        try {
-            return employeeService.getEmployeeById(id);
-        } catch (UserProvisioningCustomException e) {
-            return null;
-        }
-    }
-
 }
-

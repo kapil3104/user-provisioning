@@ -1,5 +1,6 @@
 package com.user.provisioning.controller;
 
+import com.user.provisioning.dto.MessageResponse;
 import com.user.provisioning.entity.Employee;
 import com.user.provisioning.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -21,27 +22,49 @@ public class EmployeeController {
 
     @GetMapping
     public ResponseEntity<List<Employee>> getAllEmployees() {
-        return ResponseEntity.ok(employeeService.getAllEmployees());
+        log.info("Fetching all employees");
+        List<Employee> employees = employeeService.getAllEmployees();
+        log.info("Fetched {} employees", employees.size());
+        return ResponseEntity.ok(employees);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Employee> getEmployeeById(@PathVariable String id) {
-        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
+        log.info("Fetching employee with id: {}", id);
+        Employee employee = employeeService.getEmployeeById(id);
+        log.info("Fetched employee: {}", employee);
+        return ResponseEntity.ok(employee);
     }
 
     @PostMapping
     public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
-        return ResponseEntity.ok(employeeService.createEmployee(employee));
+        log.info("Creating new employee: {}", employee);
+        Employee createdEmployee = employeeService.createEmployee(employee);
+        log.info("Created employee: {}", createdEmployee);
+        return ResponseEntity.ok(createdEmployee);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Employee> updateEmployee(@PathVariable String id, @RequestBody Employee employeeDetails) {
-        return ResponseEntity.ok(employeeService.updateEmployee(id, employeeDetails));
+    public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody Employee employeeDetails) {
+        log.info("Updating employee with id: {}", id);
+        Employee updatedEmployee = employeeService.updateEmployee(id, employeeDetails);
+        log.info("Updated employee: {}", updatedEmployee);
+        return ResponseEntity.ok(updatedEmployee);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEmployee(@PathVariable String id) {
+    public ResponseEntity<MessageResponse> deleteEmployee(@PathVariable Long id) {
+        log.info("Deleting employee with id: {}", id);
         employeeService.deleteEmployee(id);
-        return ResponseEntity.noContent().build();
+        log.info("Deleted employee with id: {}", id);
+        return ResponseEntity.ok(new MessageResponse("Employee record has been deleted successfully"));
+    }
+
+    @GetMapping("/{id}/employees")
+    public ResponseEntity<List<Employee>> getEmployeesByGroupId(@PathVariable Long id) {
+        log.info("Fetching employees for group id: {}", id);
+        List<Employee> employees = employeeService.getEmployeesByGroupId(id);
+        log.info("Fetched {} employees for group id: {}", employees.size(), id);
+        return ResponseEntity.ok(employees);
     }
 }

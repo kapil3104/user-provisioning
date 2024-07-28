@@ -28,7 +28,9 @@ public enum ErrorCode {
     ROLE_ALREADY_PRESENT("ROL_001", "Role with given name already exists", HttpStatus.BAD_REQUEST),
     ROLE_NOT_FOUND("ROL_002", "Role with given name not found", HttpStatus.NOT_FOUND),
 
-    MEMBERSHIP_REQUEST_NOT_FOUND("MEM_001", "Membership request not found", HttpStatus.NOT_FOUND);
+    MEMBERSHIP_REQUEST_NOT_FOUND("MEM_001", "Membership request not found", HttpStatus.NOT_FOUND),
+    NOT_VALID_OWNER_OF_REQUEST("MEM_002", "User is not a valid owner of the request", HttpStatus.UNAUTHORIZED),
+    INVALID_REQUEST_STATUS("MEM_003", "Existing status is not valid", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

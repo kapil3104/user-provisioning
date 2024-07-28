@@ -1,13 +1,16 @@
 package com.user.provisioning.entity;
 
+import com.user.provisioning.enums.ERole;
+import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "roles")
+@Entity
 @Data
-public class Role {
+public class Role extends Auditable<String> {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
     private ERole name;
 }

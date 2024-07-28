@@ -1,13 +1,13 @@
 package com.user.provisioning.repository;
 
-import java.util.Optional;
-
-import com.user.provisioning.entity.ERole;
+import com.user.provisioning.enums.ERole;
 import com.user.provisioning.entity.Role;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
-public interface RoleRepository extends MongoRepository<Role, String> {
+public interface RoleRepository extends JpaRepository<Role, Long> {
     Optional<Role> findByName(ERole name);
 }

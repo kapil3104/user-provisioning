@@ -1,11 +1,18 @@
-HELP.md
+# Gradle
 .gradle
-build/
+/build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+!build.gradle
+!settings.gradle
+!gradlew
+!gradlew.bat
 
-### STS ###
+# Project specific
+HELP.md
+
+### STS (Spring Tool Suite) ###
 .apt_generated
 .classpath
 .factorypath
@@ -35,3 +42,72 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build directories
+out/
+tmp/
+!**/src/main/**/tmp/
+!**/src/test/**/tmp/
+
+# IDE specific files
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Gradle caches
+.gradle/
+
+# Class files
+*.class
+
+# JAR files
+*.jar
+
+# War files
+*.war
+
+# Ear files
+*.ear
+
+# Compiled dynamic libraries
+*.dll
+*.so
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Packages
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+*.tar
+
+# JetBrains
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+tmp/

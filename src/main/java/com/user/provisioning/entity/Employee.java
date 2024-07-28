@@ -1,19 +1,27 @@
 package com.user.provisioning.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "employees")
+import java.util.List;
+
+@Entity
 @Data
-public class Employee {
+public class Employee extends Auditable<String> {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String name;
     private String email;
-    private String role;
     private String location;
     private String department;
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Membership> membershipRequests;
 }
 
