@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: qweasd@123
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: test_db
+      DB_USER: test_user
+      DB_PASSWORD: qweasd@123
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db

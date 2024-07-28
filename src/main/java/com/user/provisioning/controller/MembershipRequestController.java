@@ -42,8 +42,8 @@ public class MembershipRequestController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
-    public ResponseEntity<Membership> createRequest(@RequestBody MembershipRequest request, @AuthenticationPrincipal UserDetails userDetails) {
-        log.info("Creating new membership request by user: {}", userDetails.getUsername());
+    public ResponseEntity<Membership> createRequest(@RequestBody MembershipRequest request) {
+        log.info("Creating new membership request for employee: {}", request.getEmployeeId());
         Membership createdRequest = membershipService.createRequest(request);
         log.info("Created membership request: {}", createdRequest);
         return ResponseEntity.ok(createdRequest);

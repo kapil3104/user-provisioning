@@ -29,13 +29,9 @@ public class UserProvisioningExceptionHandler extends ResponseEntityExceptionHan
                 exception
         );
         ErrorResponse response = new ErrorResponse(
-                guid,
                 exception.getErrorCode().getCode(),
                 exception.getErrorCode().getMessage(),
                 exception.getErrorCode().getHttpStatus().value(),
-                exception.getErrorCode().getHttpStatus().name(),
-                request.getRequestURI(),
-                request.getMethod(),
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(response, exception.getErrorCode().getHttpStatus());
@@ -51,13 +47,9 @@ public class UserProvisioningExceptionHandler extends ResponseEntityExceptionHan
                 exception
         );
         ErrorResponse response = new ErrorResponse(
-                guid,
                 "INTERNAL_ERROR",
                 exception.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.name(),
-                request.getRequestURI(),
-                request.getMethod(),
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
